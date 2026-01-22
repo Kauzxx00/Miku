@@ -1,6 +1,7 @@
 require "mongoid"
 
 require_relative "../models/user.rb"
+require_relative "../models/seed.rb"
 require_relative "../models/farm_slot.rb"
 require_relative "../models/fertilizer.rb"
 
