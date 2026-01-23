@@ -22,6 +22,19 @@ class DailyCommand < Rubord::CommandBase
     reward = rand(100..500)
     user.inc(money: reward)
     user.update!(daily_claimed_at: now)
+    rewards = {
+      "beet" => rand(1..3),
+      "potato" => rand(1..3)
+    }
+
+    rewards.each do |type, qty|
+      seed = user.seeds.find { |s| s.seed_type == type.to_s }
+      if seed
+        seed.inc(quantity: qty)
+      else
+        user.seeds << Seed.new(seed_type: type.to_s, quantity: qty)
+      end
+    end
 
     message.reply(
       "> #{Icons[:gift]} - <@#{discord_id}>, você coletou sua **recompensa diária** e recebeu **R$#{reward}**!"
