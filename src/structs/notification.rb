@@ -1,5 +1,3 @@
-require_relative "../client.rb"
-
 # @param client [Rubord::Client]
 def harvest_notifications(client)
   User.all.each do |user|
