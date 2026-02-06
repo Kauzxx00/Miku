@@ -3,13 +3,13 @@ require_relative "../structs/emojis.rb"
 class DailyCommand < Rubord::CommandBase
   name "daily"
 
-  DAILY_COOLDOWN = 24 * 60 * 60
+  DAILY_COOLDOWN ||= 24 * 60 * 60
 
   def run(message, _args)
     discord_id = message.author.id.to_s
     now = Time.now
 
-    user = User.find_or_create_by(_id: discord_id)
+    user = User[discord_id] || User.create(id: discord_id)
 
     if user.daily_claimed_at && (now - user.daily_claimed_at) < DAILY_COOLDOWN
       remaining = user.daily_claimed_at + DAILY_COOLDOWN
@@ -20,24 +20,42 @@ class DailyCommand < Rubord::CommandBase
     end
 
     reward = rand(100..500)
-    user.inc(money: reward)
-    user.update!(daily_claimed_at: now)
+
     rewards = {
-      "beet" => rand(1..3),
-      "potato" => rand(1..3)
+      "beterraba" => rand(1..3),
+      "batata"    => rand(1..3)
     }
 
-    rewards.each do |type, qty|
-      seed = user.seeds.find { |s| s.seed_type == type.to_s }
-      if seed
-        seed.inc(quantity: qty)
-      else
-        user.seeds << Seed.new(seed_type: type.to_s, quantity: qty)
+    DB.transaction do
+      # dinheiro
+      user.update(
+        money: user.money + reward,
+        daily_claimed_at: now
+      )
+
+      # sementes
+      rewards.each do |type, qty|
+        seed = user.seeds_dataset.first(seed_type: type)
+
+        if seed
+          seed.update(quantity: seed.quantity + qty)
+        else
+          Seed.create(
+            user_id: user.id,
+            seed_type: type,
+            quantity: qty
+          )
+        end
       end
     end
 
     message.reply(
-      "> #{Icons[:gift]} - <@#{discord_id}>, você coletou sua **recompensa diária** e recebeu **R$#{reward}**!"
+      components: [
+        Rubord.Text("> #{Icons[:gift]} - <@#{discord_id}>, você coletou sua **recompensa diária** e recebeu **R$#{reward}**!"),
+        Rubord.Separator(divider: true, spacing: :small),
+        Rubord.Text("-# Volte em")
+      ],
+      flags: [:components_v2]
     )
   rescue => e
     Rubord::Logger.error(

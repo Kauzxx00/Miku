@@ -1,16 +1,10 @@
-class User
-  include Mongoid::Document
-  include Mongoid::Timestamps
+class Seed < Sequel::Model(:seeds)
+  many_to_one :user
+end
 
-  field :_id, type: String, overwrite: true
-  field :money, type: Integer, default: 0
-  field :daily_claimed_at, type: Time
+class User < Sequel::Model(:users)
+  unrestrict_primary_key
 
-  embeds_many :seeds
-  embeds_many :fertilizers
-  embeds_many :farm_slots
-
-  index({ _id: 1 }, unique: true)
-
-  validates :_id, presence: true
+  one_to_many :seeds
+  one_to_one :farm
 end

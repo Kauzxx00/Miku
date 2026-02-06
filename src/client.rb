@@ -1,13 +1,16 @@
 require "rubord"
+require "async"
 require "dotenv/load"
-# require_relative "structs/mongo.rb"
-require_relative "structs/notification.rb"
+require_relative "structs/database.rb"
+require_relative "models/user.rb"
+require_relative "models/farm.rb"
+# require_relative "structs/notification.rb"
 
 client = Rubord::Client.new(prefix: ".", intents: [Rubord::Intents.all])
 
 client.on_ready do
   Rubord::Logger.success client.user.tag
-  harvest_notifications(client)
+  # harvest_notifications(client)
 end
 
 client.on_message do |message|
@@ -16,11 +19,84 @@ client.on_message do |message|
       "> #{Icons[:notify]} - Aoba **fazendeiro**, meu nome é `Miku` e estou em fase beta.\n" +
       "> Meu **prefixo** aqui é **`m.`**. Utilize **`m.help`** para ver todos os meus **comandos**.",
     )
-
-    Rubord.Container
   end
 end
 
-Rubord::CommandLoader.load("./src/commands", client, client.commands)
+client.on_interaction do |interaction|
+  next unless interaction.custom_id.start_with?("plant_slot:")
+
+  user_id = interaction.custom_id.split(":")[1]
+  next unless interaction.user.id.to_s == user_id
+
+  context = PlantCommand.get_context(interaction.user.id.to_s)
+  next unless context
+  
+  user = User.find(user_id)
+  slot_index = interaction.values.first.to_i
+  slot = user.farm_slots[slot_index]
+
+  if slot.nil? || !slot.empty?
+    return interaction.reply(
+      content: "> 🚫 Slot inválido ou ocupado.",
+      ephemeral: true
+    )
+  end
+
+  # remove sementes
+  seed = user.seeds.find { |s| s.seed_type == context[:seed_type] }
+  seed.inc(quantity: -context[:quantity])
+
+  # planta
+  slot.plant!(
+    seed_type: context[:seed_type],
+    quantity: context[:quantity],
+    duration: context[:duration],
+    channel_id: context[:channel_id]
+  )
+
+  user.save!
+
+  interaction.update(
+    components: [
+      Rubord.Text(
+        "> 🌱 <@#{user_id}> plantou **#{context[:quantity]}x #{context[:seed_type]}**!",
+        "> ⏳ Pronto em **#{context[:duration] / 60} minutos**"
+      )
+    ], flags: [:components_v2]
+  )
+
+  Thread.new do
+    sleep(context[:duration])
+
+    begin
+      refreshed_user = User.find(user_id)
+      next unless refreshed_user
+
+      refreshed_slot = refreshed_user.farm_slots[slot_index]
+      next unless refreshed_slot
+      next unless refreshed_slot.ready?
+
+      channel =
+        client.channels.get(context[:channel_id]) ||
+        client.fetch_channel(context[:channel_id])
+
+      if channel
+        channel.post(
+          "> #{Icons[:seeds]} - <@#{user_id}>, sua plantação de **#{refreshed_slot.seed_type}** está pronta para colheita!"
+        )
+      end
+    rescue => e
+      Rubord::Logger.error(
+        "Erro ao notificar colheita: #{e.message}\n#{e.backtrace.join("\n")}"
+      )
+    end
+  end
+
+  PlantCommand.clear_context(interaction.user.id.to_s)
+rescue => e
+  Rubord::Logger.error("Erro no plant(interaction): #{e.class} - #{e.full_message}")
+end
+
+Rubord::CommandLoader.load("./src/commands", client, client.commands, logCommands: false)
 
 client.login(ENV["DISCORD_TOKEN"])

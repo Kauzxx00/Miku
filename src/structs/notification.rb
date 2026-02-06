@@ -17,7 +17,7 @@ def harvest_notifications(client)
 
           next unless updated_slot&.ready?
 
-          channel = client.fetch_channel(slot.channel_id.to_i).wait
+          channel = client.fetch_channel(slot.channel_id.to_i)
           next unless channel
 
           channel.post(
