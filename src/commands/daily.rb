@@ -27,13 +27,11 @@ class DailyCommand < Rubord::CommandBase
     }
 
     DB.transaction do
-      # dinheiro
       user.update(
         money: user.money + reward,
         daily_claimed_at: now
       )
 
-      # sementes
       rewards.each do |type, qty|
         seed = user.seeds_dataset.first(seed_type: type)
 

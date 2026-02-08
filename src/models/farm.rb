@@ -1,8 +1,12 @@
 class Farm < Sequel::Model(:farms)
   unrestrict_primary_key
 
-  one_to_many :farm_slots
-  many_to_one :user, key: :id
+  many_to_one :user,
+    key: :id,
+    primary_key: :id
+
+  one_to_many :farm_slots,
+    key: :farm_id
 
   def full?
     farm_slots.count >= max_slots
@@ -14,7 +18,7 @@ class Farm < Sequel::Model(:farms)
 end
 
 class FarmSlot < Sequel::Model(:farm_slots)
-  many_to_one :farm
+  many_to_one :farm, key: :farm_id
 
   def empty?
     planted_at.nil?

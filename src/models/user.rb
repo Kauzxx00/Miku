@@ -6,5 +6,8 @@ class User < Sequel::Model(:users)
   unrestrict_primary_key
 
   one_to_many :seeds
-  one_to_one :farm
+
+  one_to_one :farm,
+    key: :id,
+    primary_key: :id
 end

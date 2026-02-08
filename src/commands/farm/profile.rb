@@ -5,7 +5,7 @@ class ProfileCommand < Rubord::CommandBase
 
   def run(message, _args)
     discord_id = message.author.id.to_s
-    user = User.find_or_create_by(_id: discord_id)
+    user = User[discord_id] || User.create(id: discord_id)
     now = Time.now
 
     daily_text =
@@ -18,17 +18,22 @@ class ProfileCommand < Rubord::CommandBase
         "Disponível"
       end
 
+    farm = user.farm || create_farm_for(user)
+    slots = farm.farm_slots.sort_by(&:id)
+
     slots_text =
-      if user.farm_slots.any?
-        user.farm_slots.map.with_index do |slot, i|
+      if slots.any?
+        slots.map.with_index do |slot, i|
+          n = i + 1
+
           if slot.empty?
-            "🟫 Slot #{i + 1}: vazio"
+            "🟫 Slot #{n}: vazio"
           elsif slot.ready?
-            "🌾 Slot #{i + 1}: pronto para colher"
+            "🌾 Slot #{n}: pronto para colher"
           elsif slot.dead?
-            "💀 Slot #{i + 1}: planta morta"
+            "💀 Slot #{n}: planta morta"
           else
-            "🌱 Slot #{i + 1}: #{slot.seed_type} <t:#{slot.harvest_at.to_i}:R>"
+            "🌱 Slot #{n}: #{slot.seed_type} <t:#{slot.harvest_at.to_i}:R>"
           end
         end.join("\n")
       else
@@ -47,6 +52,18 @@ class ProfileCommand < Rubord::CommandBase
 
     message.reply(components: [container], flags: [:components_v2])
   rescue => e
-    Rubord::Logger.error("Erro no profile: #{e.class} - #{e.message}")
+    Rubord::Logger.error("Erro no profile: #{e.class} - #{e.full_message}")
+  end
+
+  private
+
+  def create_farm_for(user)
+    farm = Farm.create(id: user.id)
+
+    2.times do
+      FarmSlot.create(farm_id: farm.id)
+    end
+
+    farm
   end
 end

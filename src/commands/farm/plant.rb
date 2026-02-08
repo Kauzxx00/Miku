@@ -27,7 +27,6 @@ class PlantCommand < Rubord::CommandBase
   def run(message, args)
     discord_id = message.author.id.to_s
 
-    # USER
     user = User[discord_id] || User.create(id: discord_id)
 
     type   = args[0]
@@ -39,12 +38,11 @@ class PlantCommand < Rubord::CommandBase
     plant = PLANTS[type]
     return message.reply("> ❌ Planta inválida.") unless plant
 
-    # SEED
     seed = user.seeds_dataset.first(seed_type: type)
     return message.reply("> ❌ Você não possui essa semente.") unless seed
     return message.reply("> ❌ Sementes insuficientes.") if seed.quantity < amount
 
-    farm = user.farm || Farm.create(user_id: user.id)
+    farm = user.farm || create_farm_for(user)
     slots = farm.farm_slots
 
     return message.reply("> ❌ Você não possui slots de fazenda.") if slots.empty?
@@ -96,5 +94,17 @@ class PlantCommand < Rubord::CommandBase
   rescue => e
     Rubord::Logger.error("Erro no plantar(menu): #{e.class} - #{e.message}")
     message.reply("> ❌ Erro ao iniciar plantio.")
+  end
+
+  private
+
+  def create_farm_for(user)
+    farm = Farm.create(id: user.id)
+
+    2.times do
+      FarmSlot.create(farm_id: farm.id)
+    end
+
+    farm
   end
 end

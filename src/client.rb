@@ -16,8 +16,9 @@ end
 client.on_message do |message|
   if message.content.start_with?("<@#{client.user.id}>")
     message.reply(
-      "> #{Icons[:notify]} - Aoba **fazendeiro**, meu nome é `Miku` e estou em fase beta.\n" +
-      "> Meu **prefixo** aqui é **`m.`**. Utilize **`m.help`** para ver todos os meus **comandos**.",
+      "#{Icons[:notify]} Aoba **fazendeiro**! Eu sou a <@#{client.user.id}>\n" \
+      "> - Veja sua **fazenda** com **`m.farm`**\n" \
+      "> - Liste meus **comandos** usando **`m.help`**\n"
     )
   end
 end
@@ -31,10 +32,12 @@ client.on_interaction do |interaction|
   context = PlantCommand.get_context(interaction.user.id.to_s)
   next unless context
   
-  user = User.find(user_id)
-  slot_index = interaction.values.first.to_i
-  slot = user.farm_slots[slot_index]
+  user = User[user_id]
+  slot_index = interaction.values.first.to_i - 1
+  farm = user.farm
+  slot = farm.farm_slots[slot_index]
 
+  pp slot, slot_index
   if slot.nil? || !slot.empty?
     return interaction.reply(
       content: "> 🚫 Slot inválido ou ocupado.",
@@ -42,19 +45,15 @@ client.on_interaction do |interaction|
     )
   end
 
-  # remove sementes
   seed = user.seeds.find { |s| s.seed_type == context[:seed_type] }
-  seed.inc(quantity: -context[:quantity])
+  seed.update(quantity: seed.quantity - context[:quantity])
 
-  # planta
   slot.plant!(
     seed_type: context[:seed_type],
     quantity: context[:quantity],
     duration: context[:duration],
     channel_id: context[:channel_id]
   )
-
-  user.save!
 
   interaction.update(
     components: [
@@ -69,10 +68,13 @@ client.on_interaction do |interaction|
     sleep(context[:duration])
 
     begin
-      refreshed_user = User.find(user_id)
+      refreshed_user = User[user_id]
       next unless refreshed_user
 
-      refreshed_slot = refreshed_user.farm_slots[slot_index]
+      farm = refreshed_user.farm
+      next unless farm
+
+      refreshed_slot = farm.farm_slots[slot_index]
       next unless refreshed_slot
       next unless refreshed_slot.ready?
 
