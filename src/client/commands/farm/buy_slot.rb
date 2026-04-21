@@ -5,7 +5,7 @@ class BuyslotCommand < Rubord::CommandBase
 
   def run(message, _args)
     discord_id = message.author.id.to_s
-    user = User.find_or_create_by(_id: discord_id)
+    user = User[discord_id] || User.create(id: discord_id)
 
     if user.money < SLOT_PRICE
       return message.reply(
@@ -13,9 +13,8 @@ class BuyslotCommand < Rubord::CommandBase
       )
     end
 
-    user.inc(money: -SLOT_PRICE)
-    user.farm_slots << FarmSlot.new
-    user.save!
+    user.update(money: user.money - SLOT_PRICE)
+    FarmSlot.create(farm_id: discord_id)
 
     message.reply(
       "> #{Icons[:success]} - <@#{discord_id}>, você comprou um novo slot de fazenda por **R$#{SLOT_PRICE}**!"

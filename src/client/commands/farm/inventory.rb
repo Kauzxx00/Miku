@@ -17,15 +17,6 @@ class InventoryCommand < Rubord::CommandBase
       )
     end
 
-    # if user.fertilizers&.any?
-    #   components << Rubord.Text(
-    #     "- **Fertilizantes**",
-    #     user.fertilizers.map { |f|
-    #       "> #{f.fertilizer_type}: **#{f.quantity}**"
-    #     }.join("\n")
-    #   )
-    # end
-
     if components.empty?
       components << Rubord.Text("> Você não possui itens no inventário.")
     end

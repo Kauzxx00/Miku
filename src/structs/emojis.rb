@@ -11,9 +11,15 @@ Icons = {
   money: "<:money:1467326233527193662>",
   user: "<:user:1469808394218110996>",
   farm: "<:farm:1469809972513734727>",
+  harvest: "<:harvest:1478792439262220458>",
+  locked: "<:lock:1490466277288972478>",
   
   # Alimentos
-  batata: "<:batata:1465088350628347934>",
-  beterraba: "<:beterraba:1465088141940625553>",
-  trigo: "<:trigo:1465088278142386318>"
+  batata: "<:potato:1490010422550462544>",
+  beterraba: "<:beet:1490107635993940068>",
+  
+  # Terreno
+  dirt: "<:dirt:1490107562224517282>",
+  ready_beterraba: "<:ready_beet:1490009982668902610>",
+  ready_batata: "<:ready_potato:1490010343462932530>"
 }

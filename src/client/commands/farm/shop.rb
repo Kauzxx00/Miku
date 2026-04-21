@@ -30,8 +30,7 @@ class ShopComamnd < Rubord::CommandBase
       seeds_menu.add_option(
         label: type.capitalize,
         value: "seed_#{type}",
-        description: "Comprar semente de #{type} por R$#{SEED_PRICES[type]}",
-        emoji: { id: Icons[type.to_sym].gsub(/[^\d]/, "") }
+        description: "Comprar semente de #{type} por R$#{SEED_PRICES[type]}"
       )
     end
 

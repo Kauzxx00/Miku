@@ -1,5 +1,3 @@
-require_relative "../structs/emojis.rb"
-
 class DailyCommand < Rubord::CommandBase
   name "daily"
 

@@ -1,5 +1,3 @@
-require_relative "../../structs/emojis.rb"
-
 class ProfileCommand < Rubord::CommandBase
   name "profile"
 
@@ -60,7 +58,7 @@ class ProfileCommand < Rubord::CommandBase
   def create_farm_for(user)
     farm = Farm.create(id: user.id)
 
-    2.times do
+    3.times do
       FarmSlot.create(farm_id: farm.id)
     end
 

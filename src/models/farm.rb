@@ -27,9 +27,10 @@ class FarmSlot < Sequel::Model(:farm_slots)
   def ready?
     harvest_at && Time.now >= harvest_at
   end
-
+  
   def dead?
-    harvest_at && Time.now > harvest_at + grace_time
+    return false unless harvest_at && planted_at
+    Time.now > harvest_at + grace_time
   end
 
   def growing?
