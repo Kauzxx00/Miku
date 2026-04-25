@@ -1,5 +1,6 @@
 class ProfileCommand < Rubord::CommandBase
   name "profile"
+  aliases "perfil"
 
   def run(message, _args)
     discord_id = message.author.id.to_s
@@ -10,42 +11,31 @@ class ProfileCommand < Rubord::CommandBase
       if user.daily_claimed_at
         next_daily = user.daily_claimed_at + DailyCommand::DAILY_COOLDOWN
         now >= next_daily ?
-          "Disponível" :
+          "**Disponível**" :
           "<t:#{next_daily.to_i}:R>"
       else
-        "Disponível"
+        "**Disponível**"
       end
 
     farm = user.farm || create_farm_for(user)
-    slots = farm.farm_slots.sort_by(&:id)
-
-    slots_text =
-      if slots.any?
-        slots.map.with_index do |slot, i|
-          n = i + 1
-
-          if slot.empty?
-            "🟫 Slot #{n}: vazio"
-          elsif slot.ready?
-            "🌾 Slot #{n}: pronto para colher"
-          elsif slot.dead?
-            "💀 Slot #{n}: planta morta"
-          else
-            "🌱 Slot #{n}: #{slot.seed_type} <t:#{slot.harvest_at.to_i}:R>"
-          end
-        end.join("\n")
-      else
-        "> Nenhum slot comprado"
-      end
+    slots = farm.farm_slots_dataset.all
+    ready_slots = slots.select(&:ready?).count
+    growing_slots = slots.select(&:growing?).count
 
     container = Rubord.Container(
-      Rubord.Text("## 👨‍🌾 Perfil da Fazenda"),
+      Rubord.Text("### × Perfil de [@#{message.author.globalname}](https://discord.com/users/#{message.author.id})"),
       Rubord.Separator(divider: true, spacing: :small),
 
-      Rubord.Text("- **Economia**", "> Saldo: **R$#{user.money}**\n> Daily: #{daily_text}"),
+      Rubord.Text("**#{Icons[:money]} - Economias**",
+        "> - **Saldo:** `( R$#{user.money} )`",
+        "> - **Daily:** #{daily_text}"
+      ),
       Rubord.Separator(spacing: :small),
 
-      Rubord.Text("- **Slots**", slots_text)
+      Rubord.Text("**#{Icons[:farm]} - Fazenda**",
+        "> - **Nível:** `( #{farm.level} )`",
+        "> - **Slots prontos para colher:** `( #{ready_slots}/#{growing_slots} )`"
+      )
     )
 
     message.reply(components: [container], flags: [:components_v2])

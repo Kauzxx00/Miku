@@ -17,7 +17,7 @@ class DailyCommand < Rubord::CommandBase
       )
     end
 
-    reward = rand(100..500)
+    reward = rand(100..350)
 
     rewards = {
       "beterraba" => rand(1..3),
@@ -47,9 +47,12 @@ class DailyCommand < Rubord::CommandBase
 
     message.reply(
       components: [
-        Rubord.Text("> #{Icons[:gift]} - <@#{discord_id}>, você coletou sua **recompensa diária** e recebeu **R$#{reward}**!"),
+        Rubord.Text("#{Icons[:gift]} - Você coletou sua **recompensa diária**.",
+          "> - **`( R$#{reward} )`**",
+          *rewards.map { |type, qty| "> - **`( #{type.capitalize} #{qty}x )`**" }
+        ),
         Rubord.Separator(divider: true, spacing: :small),
-        Rubord.Text("-# Volte em")
+        Rubord.Text("> - Volte **<t:#{(now + DAILY_COOLDOWN).to_i}:R>** para coletar sua recompensa novamente.")
       ],
       flags: [:components_v2]
     )

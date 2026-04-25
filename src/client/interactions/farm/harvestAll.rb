@@ -1,5 +1,5 @@
-class Harvest < Interactions::Base
-  name "harvest"
+class HarvestAll < Interactions::Base
+  name "harvest_all"
   authorOnly? true
 
   def run(interaction)
@@ -8,12 +8,14 @@ class Harvest < Interactions::Base
     user = User[discord_id]
     return interaction.reply("Você não possui uma fazenda.") unless user&.farm
 
-    slot_index = interaction.custom_id.split(":").last.to_i
-
     farm = user.farm
-    slot = farm.farm_slots.sort_by(&:id)[slot_index]
+    slots = farm.farm_slots_dataset.all
 
-    ready_slots = slot.ready? ? [slot] : []
+    ready_slots = slots.select(&:ready?)
+
+    if ready_slots.empty?
+      return interaction.reply("Nada pronto para colher.")
+    end
 
     grouped = ready_slots.group_by { |s| s.seed_type }
 
@@ -45,9 +47,8 @@ class Harvest < Interactions::Base
 
     interaction.reply(
       components: [
-        Rubord.Text(
-          "**#{Icons[:harvest]} › <@#{discord_id}>, você colheu:**",
-          harvested_text.map { |h| "> - #{h}" }.join("\n")
+        Rubord.Text(">>> **#{Icons[:harvest]} › <@#{discord_id}>, você colheu:**",
+          harvested_text.map { |h| "- × #{h}" }.join("\n")
         )
       ],
       flags: [:components_v2]
@@ -55,7 +56,7 @@ class Harvest < Interactions::Base
 
   rescue => e
     Rubord::Logger.error(
-      "Erro no harvest para #{discord_id}: #{e.class} - #{e.full_message}"
+      "Erro no harvest_all para #{discord_id}: #{e.class} - #{e.full_message}"
     )
 
     interaction.reply("Ocorreu um erro ao colher.")

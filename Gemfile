@@ -1,9 +1,10 @@
-source 'https://rubygems.org'
+# frozen_string_literal: true
 
-gem 'mongoid'
-gem 'mongo'
-gem 'rubord'
-gem "dotenv"
-gem "sequel"
-gem "pg"
-gem "async"
+source "https://rubygems.org"
+
+# gem "rails"
+
+gem "async", "~> 2.39"
+gem "rubord", "~> 0.1.4"
+gem "dotenv", "~> 3.2"
+gem "sequel", "~> 5.103"

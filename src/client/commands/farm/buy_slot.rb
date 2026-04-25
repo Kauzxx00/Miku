@@ -1,5 +1,6 @@
 class BuyslotCommand < Rubord::CommandBase
   name "buy_slot"
+  aliases "comprar_slot"
 
   SLOT_PRICE ||= 500
 

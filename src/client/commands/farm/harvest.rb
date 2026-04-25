@@ -1,57 +1,70 @@
 class HarvestCommand < Rubord::CommandBase
-  name "colher"
-  aliases "harvest"
+  name 'colher'
+  aliases 'harvest'
 
   def run(message, args)
     discord_id = message.author.id.to_s
 
     user = User[discord_id]
-    return message.reply("Você não possui uma fazenda.") unless user&.farm
+    return message.reply('Você não possui uma fazenda.') unless user&.farm
 
     farm  = user.farm
     slots = farm.farm_slots_dataset.order(:id).all
 
     if args.empty?
-      ready_slots = slots.select(&:ready?)
+      harvest_all_ready_slots(message, user, slots, discord_id)
+    else
+      harvest_specific_slot(message, user, slots, args)
+    end
+  rescue StandardError => e
+    Rubord::Logger.error("Erro no colher para #{discord_id}: #{e.class} - #{e.message}")
+    message.reply('Ocorreu um erro ao colher.')
+  end
 
-      return message.reply("**#{Icons[:no]} › Nada plantado para colheita.**") if ready_slots.empty?
+  private
 
-      grouped = ready_slots.group_by(&:seed_type)
-      harvested_text = []
+  def harvest_all_ready_slots(message, user, slots, discord_id)
+    ready_slots = slots.select(&:ready?)
 
-      DB.transaction do
-        grouped.each do |type, items|
-          quantidade = items.sum(&:quantity)
+    return message.reply("**#{Icons[:no]} › Nada plantado para colheita.**") if ready_slots.empty?
 
-          seed = user.seeds_dataset.first(seed_type: type)
+    grouped = ready_slots.group_by(&:seed_type)
+    harvested_text = []
 
-          if seed
-            seed.update(quantity: seed.quantity + quantidade)
-          else
-            Seed.create(
-              user_id: user.id,
-              seed_type: type,
-              quantity: quantidade
-            )
-          end
+    DB.transaction do
+      grouped.each do |type, items|
+        quantidade = items.sum(&:quantity)
 
-          harvested_text << "#{quantidade}x #{type}"
+        seed = user.seeds_dataset.first(seed_type: type)
 
-          items.each(&:clear!)
-        end
-      end
-
-      return message.reply(
-        components: [
-          Rubord.Text("**#{Icons[:harvest]} › <@#{discord_id}>, você colheu:**"),
-          Rubord.Text(
-            harvested_text.map { |h| "> › #{h}" }.join("\n")
+        if seed
+          seed.update(quantity: seed.quantity + quantidade)
+        else
+          Seed.create(
+            user_id: user.id,
+            seed_type: type,
+            quantity: quantidade
           )
-        ],
-        flags: [:components_v2]
-      )
+        end
+
+        harvested_text << "`( #{type.capitalize} #{quantidade}x )`"
+
+        items.each(&:clear!)
+      end
     end
 
+    message.reply(
+      components: [
+        Rubord.Text("**#{Icons[:harvest]} › <@#{discord_id}>, você colheu:**"),
+        Rubord.Text(
+          harvested_text.map { |h| "> › #{h}" }.join("\n")
+        )
+      ],
+      flags: [:components_v2]
+    )
+  end
+
+  def harvest_specific_slot(message, user, slots, args)
     index = args[0].to_i
     return message.reply("**#{Icons[:no]} › Use: `colher <slot>`**") if index <= 0
 
@@ -84,11 +97,5 @@ class HarvestCommand < Rubord::CommandBase
       "#{Icons[:harvest]} › Colheita no slot **#{index}.**\n" \
       "> - **Você colheu** `( #{type.capitalize} #{quantidade}x )`"
     )
-  rescue => e
-    Rubord::Logger.error(
-      "Erro no colher para #{discord_id}: #{e.class} - #{e.message}"
-    )
-
-    message.reply("Ocorreu um erro ao colher.")
   end
 end

@@ -28,7 +28,7 @@ class Slot < Interactions::Base
         "> - **#{Icons[:harvest]} › Capacidade:** [` #{slot.capacity}x `]"
       ),
       Rubord.ActionRow(
-        Rubord.Button(label: "› Colher", custom_id: "harvest:#{interaction.user.id}", style: 3, disabled: slot.empty?),
+        Rubord.Button(label: "› Colher", custom_id: "harvest:#{interaction.user.id}:#{slot_index}", style: 3, disabled: !slot.ready?),
         Rubord.Button(label: "› Limpar", custom_id: "clean:#{interaction.user.id}", style: 4, disabled: slot.empty?),
         Rubord.Button(label: "› Voltar", custom_id: "home:#{interaction.user.id}", style: 2)
       )

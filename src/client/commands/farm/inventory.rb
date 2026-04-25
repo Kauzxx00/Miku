@@ -1,6 +1,6 @@
 class InventoryCommand < Rubord::CommandBase
   name "inventory"
-  aliases "inv"
+  aliases "inv", "inventario"
 
   def run(message, _args)
     discord_id = message.author.id.to_s
